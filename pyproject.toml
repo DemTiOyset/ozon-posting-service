@@ -1,0 +1,43 @@
+[project]
+name = "application"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.17.2",
+    "annotated-doc==0.0.4",
+    "annotated-types==0.7.0",
+    "anyio==4.12.0",
+    "asyncpg>=0.31.0",
+    "certifi==2025.11.12",
+    "charset-normalizer==3.4.4",
+    "click==8.3.1",
+    "colorama==0.4.6",
+    "docker==7.1.0",
+    "dotenv==0.9.9",
+    "fastapi==0.127.0",
+    "h11==0.16.0",
+    "httpx>=0.28.1",
+    "idna==3.11",
+    "jdk4py==21.0.8.0",
+    "pip==25.0.1",
+    "pydantic==2.12.5",
+    "pydantic-core==2.41.5",
+    "pydantic-settings>=2.12.0",
+    "python-dotenv==1.2.1",
+    "requests==2.32.5",
+    "sqlalchemy>=2.0.45",
+    "starlette==0.50.0",
+    "typing-extensions==4.15.0",
+    "typing-inspection==0.4.2",
+    "urllib3==2.6.2",
+    "uv==0.9.18",
+    "uvicorn==0.40.0",
+]
+
+[tool.uv.workspace]
+members = [
+    "venv",
+    "uv_dir",
+]

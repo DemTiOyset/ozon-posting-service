@@ -1,0 +1,103 @@
+﻿from enum import Enum
+
+
+class NotificationType(str, Enum):
+    """Notification Types from Yandex MarketAPI"""
+
+    PING = "PING"  #  Проверочное уведомление.
+    ORDER_CREATED = "ORDER_CREATED"  #  Создан новый заказ.
+    ORDER_CANCELLED = "ORDER_CANCELLED"  #  Заказ отменен.
+    ORDER_STATUS_UPDATED = "ORDER_STATUS_UPDATED"  #  Статус заказа изменен
+    ORDER_RETURN_CREATED = "ORDER_RETURN_CREATED"  #  Создан новый невыкуп или возврат.
+    ORDER_CANCELLATION_REQUEST = "ORDER_CANCELLATION_REQUEST"  #  Создана заявка на отмену заказа
+    ORDER_RETURN_STATUS_UPDATED = "ORDER_RETURN_STATUS_UPDATED"  #  Статус невыкупа или возврата изменен.
+    ORDER_UPDATED = "ORDER_UPDATED"  #  Заказ изменен.
+    GOODS_FEEDBACK_CREATED = "GOODS_FEEDBACK_CREATED"  #  Создан новый отзыв о товаре.
+    GOODS_FEEDBACK_COMMENT_CREATED = "GOODS_FEEDBACK_COMMENT_CREATED"  #  Создан новый комментарий к отзыву о товаре.
+    CHAT_CREATED = "CHAT_CREATED"  #  Создан новый чат с покупателем.
+    CHAT_MESSAGE_SENT = "CHAT_MESSAGE_SENT"  #  Добавлено новое сообщение в чате.
+    CHAT_ARBITRAGE_STARTED = "CHAT_ARBITRAGE_STARTED"  #  По обращению покупателя начался спор.
+    CHAT_ARBITRAGE_FINISHED = "CHAT_ARBITRAGE_FINISHED"  #  Спор завершен.
+
+
+class OrderStatusType(str, Enum):
+    PLACING = "PLACING"  #  оформляется, подготовка к резервированию.
+    RESERVED = "RESERVED"  #  зарезервирован, но недооформлен.
+    UNPAID = "UNPAID"  #  оформлен, но еще не оплачен (если выбрана оплата при оформлении)
+    PROCESSING = "PROCESSING"  #  находится в обработке.
+    DELIVERY = "DELIVERY"  #  передан в службу доставки.
+    PICKUP = "PICKUP"  #  доставлен в пункт самовывоза.
+    DELIVERED = "DELIVERED"  #  получен покупателем.
+    CANCELLED = "CANCELED"  #  отменен.
+    PENDING = "PENDING"  #  ожидает обработки со стороны продавца.
+    PARTIALLY_RETURNED = "PARTIALLY_RETURNED"  #  возвращен частично.
+    RETURNED = "RETURNED"  #  возвращен полностью.
+    UNKNOWN = "UNKNOWN"  #  неизвестный статус.
+
+
+class OrderSubstatusType(str, Enum):
+    USER_CHANGED_MIND = "USER_CHANGED_MIND"
+    USER_REFUSED_DELIVERY = "USER_REFUSED_DELIVERY"
+    USER_REFUSED_PRODUCT = "USER_REFUSED_PRODUCT"
+    SHOP_FAILED = "SHOP_FAILED"
+    USER_REFUSED_QUALITY = "USER_REFUSED_QUALITY"
+    REPLACING_ORDER = "REPLACING_ORDER"
+    PROCESSING_EXPIRED = "PROCESSING_EXPIRED"
+    PICKUP_EXPIRED = "PICKUP_EXPIRED"
+    TOO_MANY_DELIVERY_DATE_CHANGES = "TOO_MANY_DELIVERY_DATE_CHANGES"
+    TOO_LONG_DELIVERY = "TOO_LONG_DELIVERY"
+    INCORRECT_PERSONAL_DATA = "INCORRECT_PERSONAL_DATA"
+    TECHNICAL_ERROR = "TECHNICAL_ERROR"
+
+
+class ReturnType(str, Enum):
+    UNREDEEMED = "UNREDEEMED"
+    RETURN = "RETURN"
+
+
+class RefundStatusType(str, Enum):
+    STARTED_BY_USER = "STARTED_BY_USER"
+    REFUND_IN_PROGRESS = "REFUND_IN_PROGRESS"
+    REFUNDED = "REFUNDED"
+    FAILED = "FAILED"
+    WAITING_FOR_DECISION = "WAITING_FOR_DECISION"
+    DECISION_MADE = "DECISION_MADE"
+    REFUNDED_WITH_BONUSES = "REFUNDED_WITH_BONUSES"
+    REFUNDED_BY_SHOP = "REFUNDED_BY_SHOP"
+    COMPLETE_WITHOUT_REFUND = "COMPLETE_WITHOUT_REFUND"
+    CANCELLED = "CANCELLED"
+    REJECTED = "REJECTED"
+    PREMODERATION_DISPUTE = "PREMODERATION_DISPUTE"
+    PREMODERATION_DECISION_WAITING ="PREMODERATION_DECISION_WAITING"
+    PREMODERATION_DECISION_MADE ="PREMODERATION_DECISION_MADE"
+    PREMODERATION_SELECT_DELIVERY = "PREMODERATION_SELECT_DELIVERY"
+    UNKNOWN = "UNKNOWN"
+
+
+class ReturnShipmentStatusType(str, Enum):
+    CREATED = "CREATED"
+    RECEIVED = "RECEIVED"
+    IN_TRANSIT = "IN_TRANSIT"
+    READY_FOR_PICKUP = "READY_FOR_PICKUP"
+    PICKED = "PICKED"
+    LOST = "LOST"
+    EXPIRED = "EXPIRED"
+    CANCELLED = "CANCELLED"
+    FULFILLED = "FULFILLED"
+    PREPARED_FOR_UTILIZATION = "PREPARED_FOR_UTILIZATION"
+    NOT_IN_DEMAND = "NOT_IN_DEMAND"
+    UTILIZED = "UTILIZED"
+    READY_FOR_EXPROPRIATION = "READY_FOR_EXPROPRIATION"
+    RECEIVED_FOR_EXPROPRIATION = "RECEIVED_FOR_EXPROPRIATION"
+    UNKNOWN = "UNKNOWN"
+
+
+class OrderUpdateType(str, Enum):
+    SHIPMENT_DATE_UPDATED = "SHIPMENT_DATE_UPDATED"
+    DELIVERY_DATE_UPDATED = "DELIVERY_DATE_UPDATED"
+    UNKNOWN = "UNKNOWN"
+
+class NotificationApiErrorType(str, Enum):
+    UNKNOWN = "UNKNOWN"
+    WRONG_EVENT_FORMAT = "WRONG_EVENT_FORMAT"
+    DUPLICATE_EVENT = "DUPLICATE_EVENT"
