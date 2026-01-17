@@ -13,18 +13,8 @@ async def _create_order_with_items(
 
     async with async_session_maker() as session:
         async with session.begin():
-            for order in orders:
-                session.add(order)
-
-                await session.flush()
-                await session.refresh(order)
-
-            stmt = (select(Orders)
-                    .where(Orders.posting_number == orders.posting_number)
-                    )
-
-            result = await session.execute(stmt)
-            orders = result.scalars().all()
+            session.add_all(orders)
+            await session.flush()
 
             return orders
 
@@ -122,7 +112,7 @@ async def _update_order_delivery_date_items(
             return updated_orders
 
 
-def __dto_to_order(dto: OrderDTO) -> Orders:
+def _dto_to_order(dto: OrderDTO) -> Orders:
     data = dto.model_dump(exclude_none=True)
     return Orders(**data)
 

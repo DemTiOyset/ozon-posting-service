@@ -1,40 +1,46 @@
 ﻿services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+        POSTGRES_DB: ozon_1
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: 1234
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gorbushka_migrate
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["uv", "run", "alembic", "-c", "alembic.ini", "upgrade", "head"]
+    restart: "no"
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: gorbushka_app
+    container_name: gorbushka_ozon_app
     env_file:
       - .env
     ports:
       - "8000:8000"
-    volumes:
-      - .:/application
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-#    depends_on:
-#      - postgres
-#      - redis
-#
-#  postgres:
-#    image: postgres:16-alpine
-#    container_name: gorbushka_postgres
-#    environment:
-#      POSTGRES_DB: gorbushka
-#      POSTGRES_USER: gorbushka
-#      POSTGRES_PASSWORD: gorbushka
-#    ports:
-#      - "5432:5432"
-#    volumes:
-#      - pgdata:/var/lib/postgresql/data
-#
-#  redis:
-#    image: redis:7-alpine
-#    container_name: gorbushka_redis
-#    ports:
-#      - "6379:6379"
-#    volumes:
-#      - redisdata:/data
-#
-#volumes:
-#  pgdata:
-#  redisdata:
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  pgdata:

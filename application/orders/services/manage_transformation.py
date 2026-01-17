@@ -17,20 +17,24 @@ async def _transforming_order_creation_data(
     delivery_date_end = notification.delivery_date_end
     posting_number = notification.posting_number
     seller_id = notification.seller_id
+    shipment_date = notification.shipment_date
 
-    order_items: list[OrderDTO] = []
+    order_items: List[OrderDTO] = []
     for product in notification.products:
         sku = product.sku
         offer_id = product.offer_id
         quantity = product.quantity
         status = OrderUpdatedStatusEnum.posting_created.value
+        name = product.name
 
-        for financial_data_product in order_data.financial_datas.products:
+        for financial_data_product in order_data.financial_data.products:
             if sku == financial_data_product.product_id:
                 order_item = OrderDTO.model_validate({
+                    "name": name,
                     "offer_id": offer_id,
                     "quantity": quantity,
                     "sku": sku,
+                    "shipment_date": shipment_date,
                     "commission_amount": financial_data_product.commission_amount,
                     "commission_percent": financial_data_product.commission_percent,
                     "payout": financial_data_product.payout,

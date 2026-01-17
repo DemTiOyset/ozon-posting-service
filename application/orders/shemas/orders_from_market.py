@@ -12,7 +12,7 @@ class ProductFinancialOrderDTO(BaseModel):
     customer_price: float    # Цена товара для покупателя с учётом скидок продавца и Ozon.
     total_discount_percent: float    # Процент скидки.
     total_discount_value: float      # Сумма скидки.
-    product_id: int     # sku.
+    product_id: int
 
 
 class FinancialOrderDataDTO(BaseModel):
@@ -20,16 +20,16 @@ class FinancialOrderDataDTO(BaseModel):
 
 class ProductOrderDTO(BaseModel):
     name: str
-    quantity: str
+    quantity: int
     sku: int
 
-
 class ReceivedOrderDTO(BaseModel):
-    posting_number: int
+    posting_number: str
     status: str
     in_process_at: datetime     # Дата и время начала обработки отправления.
     products: List[ProductOrderDTO]
-    financial_datas: Optional[FinancialOrderDataDTO]
+    financial_data: FinancialOrderDataDTO | None = None
+
 
 
 class ReceivedBusinessOrderDTO(BaseModel):

@@ -4,7 +4,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     String, Integer, DateTime, Boolean,
-    Index, text, DOUBLE
+    Index, text, Float, BigInteger
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -16,6 +16,11 @@ class Orders(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
+    name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+
     posting_number: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
@@ -26,8 +31,8 @@ class Orders(Base):
         nullable=False,
     )
 
-    offer_id: Mapped[int] = mapped_column(
-        Integer,
+    offer_id: Mapped[str] = mapped_column(
+        String(255),
         nullable=False,
     )
 
@@ -37,7 +42,7 @@ class Orders(Base):
     )
 
     commission_amount: Mapped[float] = mapped_column(
-        DOUBLE,
+        Float,
         nullable=False,
     )
 
@@ -47,32 +52,32 @@ class Orders(Base):
     )
 
     payout: Mapped[float] = mapped_column(
-        DOUBLE,
+        Float,
         nullable=False,
     )
 
     price: Mapped[float] = mapped_column(
-        DOUBLE,
+        Float,
         nullable=False,
     )
 
     customer_price: Mapped[float] = mapped_column(
-        DOUBLE,
+        Float,
         nullable=False,
     )
 
     total_discount_percent: Mapped[float] = mapped_column(
-        DOUBLE,
+        Float,
         nullable=False,
     )
 
     total_discount_value: Mapped[float] = mapped_column(
-        DOUBLE,
+        Float,
         nullable=False,
     )
 
     sku: Mapped[int] = mapped_column(
-        Integer,
+        BigInteger,
         nullable=False,
     )
 

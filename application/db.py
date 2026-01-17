@@ -16,7 +16,7 @@ class Base(AsyncAttrs, DeclarativeBase):
     pass
 
 engine = create_async_engine(
-    settings.database_url,
+    settings.DATABASE_URL,
     echo=True, # Логируем SQL-запросы в режиме отладки
     pool_pre_ping=True,  # Проверяем соединение перед использованием
     pool_size=20,        # Максимальное количество соединений в пуле
