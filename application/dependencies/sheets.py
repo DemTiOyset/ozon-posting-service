@@ -4,7 +4,7 @@ from application.orders.integrations.google_sheets.repository import SheetsRepos
 
 
 def get_sheets_repo() -> SheetsRepository:
-    service = build_sheets_service("application/google_secret.json")
+    service = build_sheets_service(settings.GOOGLE_SECRET_PATH)
     return SheetsRepository(
         service=service,
         spreadsheet_id=settings.GOOGLE_SHEET_ID,
