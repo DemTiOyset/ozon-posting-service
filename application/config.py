@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     API_KEY: str
     GOOGLE_SHEET_ID: str
     GOOGLE_SHEET_NAME: str
-    GOOGLE_SHEETS_PATH: str
+    GOOGLE_SECRET_PATH: str
 
     model_config = SettingsConfigDict(
         env_file=".env",
