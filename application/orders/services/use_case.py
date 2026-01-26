@@ -1,7 +1,4 @@
-﻿from fastapi.responses import JSONResponse
-from fastapi import status
-
-from application.orders.integrations.google_sheets.repository import SheetsRepository
+﻿from application.orders.integrations.google_sheets.repository import SheetsRepository
 from application.orders.integrations.market.client import get_order
 from application.orders.repo import OrderRepository
 from application.orders.services.manage_repo import _create_order_with_items, _dto_to_order
@@ -30,43 +27,16 @@ async def handle_order_created(
             orders = await _create_order_with_items(dto_to_model)
 
             if not orders:
-                return JSONResponse(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    content={
-                        "error": {
-                            "code": "ERROR_UNKNOWN",
-                            "message": "Failed to write to the database.",
-                            "details": None,
-                        }
-                    },
-                )
+                return {"message": "Order creation in database failed"}
 
         order_items_to_sheet = await _create_order_items_in_sheets(repo, order_items_dto)
 
         if not order_items_to_sheet:
-            return JSONResponse(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content={
-                    "error": {
-                        "code": "ERROR_UNKNOWN",
-                        "message": "Failed to write to the sheets.",
-                        "details": None,
-                    }
-                },
-            )
+            return {"message": "Order creation in sheet failed"}
 
     except Exception as e:
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "error": {
-                    "code": "ERROR_UNKNOWN",
-                    "message": "Unknown error.",
-                    "details": str(e),
-                }
-            },
-        )
+        return {"message": "Неизвестная ошибка", "error": str(e)}
 
-    return JSONResponse(status_code=200, content={"result": True})
+    return {"message": "Ok"}
 
 

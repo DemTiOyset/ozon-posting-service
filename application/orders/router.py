@@ -34,15 +34,53 @@ async def notification(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
                 "error": {
-                    "code": "ERROR_UNKNOWN",
-                    "message": "Failed to write to the database.",
-                    "details": None,
+                    "code": "ERROR_PARAMETER_VALUE_MISSED",
+                    "message": "Пропущен необходимый параметр",
+                    "details": str(e),
                 }
             },
         )
 
     response = await handle_order_created(notification, repo)
-    return response
+
+    if response.get("message") == "Order creation failed":
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "error": {
+                    "code": "ERROR_PARAMETER_VALUE_MISSED",
+                    "message": "Ошибка при записи в базу данных.",
+                    "details": None,
+                }
+            },
+        )
+
+    elif response.get("message") == "Order creation in sheet failed":
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "error": {
+                    "code": "ERROR_UNKNOWN",
+                    "message": "Ошибка записи в таблицу для отчетности.",
+                    "details": None,
+                }
+            },
+        )
+    elif response.get("message") == "Неизвестная ошибка":
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "error": {
+                    "code": "ERROR_UNKNOWN",
+                    "message": "Unknown error.",
+                    "details": response.get("error"),
+                }
+            },
+        )
+    elif response.get("message") == "Ok":
+        return JSONResponse(status_code=200, content={"result": True})
+
+    return JSONResponse(status_code=200, content={"result": True})
 
 
 
