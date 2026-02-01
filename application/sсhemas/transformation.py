@@ -1,13 +1,13 @@
 from typing import List
 
 from application.database.models.orders import Orders
-from application.orders.shemas.notification import OrderCancelledNotificationDTO, OrderUpdatedStatusEnum, \
+from application.sсhemas.notification import OrderCancelledNotificationDTO, OrderUpdatedStatusEnum, \
     OrderUpdatedShipmentDateNotificationDTO, OrderUpdatedStatusNotificationDTO, OrderUpdatedDeliveryDateNotificationDTO
-from application.orders.shemas.orders_from_market import ReceivedOrderDTO
-from application.orders.shemas.orders import OrderDTO
+from application.sсhemas.orders_from_market import ReceivedOrderDTO
+from application.sсhemas.orders import OrderDTO
 
 
-async def _transforming_order_data_creation(
+async def transforming_order_data_creation(
         order_data: ReceivedOrderDTO
 ) -> List[OrderDTO]:
 
@@ -47,7 +47,7 @@ async def _transforming_order_data_creation(
     return order_items
 
 
-async def _transforming_order_cancellation_data(
+async def transforming_order_cancellation_data(
         notification: OrderCancelledNotificationDTO
 ) -> List[OrderDTO]:
 
@@ -72,7 +72,7 @@ async def _transforming_order_cancellation_data(
     return order_cancellation_items
 
 
-async def _transforming_order_shipment_date_update(
+async def transforming_order_shipment_date_update(
         notification: OrderUpdatedShipmentDateNotificationDTO,
 ) -> OrderDTO:
     new_shipment_date = notification.new_cutoff_date
@@ -88,7 +88,7 @@ async def _transforming_order_shipment_date_update(
     return updated_shipment_date
 
 
-async def _transforming_order_status_update(
+async def transforming_order_status_update(
         notification: OrderUpdatedStatusNotificationDTO
 ) -> OrderDTO:
     last_event_time = notification.changed_state_date
@@ -106,7 +106,7 @@ async def _transforming_order_status_update(
     return updated_order_status
 
 
-async def _transforming_order_delivery_date_update(
+async def transforming_order_delivery_date_update(
     notification: OrderUpdatedDeliveryDateNotificationDTO,
 ) -> OrderDTO:
     new_delivery_date_begin = notification.new_delivery_date_begin

@@ -8,6 +8,8 @@ from application.orders.services.use_case import handle_order_created, handle_or
 from application.orders.shemas.notification import OrderCreatedNotificationDTO, NotificationTypeEnum, \
     OrderUpdatedShipmentDateNotificationDTO
 
+from application.v1.responses import Responses
+
 router = APIRouter(
     prefix="/webhook",
     tags=["webhook"]
@@ -32,14 +34,17 @@ async def notification(
 
         if unprocessed_notification.get("message_type") == NotificationTypeEnum.TYPE_NEW_POSTING:
             notification = OrderCreatedNotificationDTO.model_validate(unprocessed_notification)
-            response = await handle_order_created(notification, repo)
+            created_order_response = await handle_order_created(notification, repo)
+            response = Responses.responses(created_order_response)
             return response
 
         elif unprocessed_notification.get("message_type") == NotificationTypeEnum.TYPE_CUTOFF_DATE_CHANGED:
             notification = OrderUpdatedShipmentDateNotificationDTO.model_validate(unprocessed_notification)
             response = await handle_order_updated_shipment_date(notification, repo)
             if response.get("message") == "There is no such entry in the database":
-                return await handle_order_created(notification, repo)
+                updated_shipment_date_response = await handle_order_created(notification, repo)
+                response = Responses.responses(updated_shipment_date_response)
+                return response
 
     except ValidationError as e:
         return JSONResponse(

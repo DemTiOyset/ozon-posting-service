@@ -1,9 +1,9 @@
 ﻿from datetime import datetime
+from enum import Enum
 from typing import List
 
 from pydantic import BaseModel
 
-from application.shemas.enums import *
 
 class NotificationTypeEnum(str, Enum):
     TYPE_PING = "TYPE_PING" # Тестовое уведомление.
