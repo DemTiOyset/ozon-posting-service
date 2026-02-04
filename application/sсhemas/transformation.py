@@ -125,6 +125,6 @@ async def transforming_order_delivery_date_update(
 
 
 
-def _dto_to_order(dto: OrderDTO) -> Orders:
+def dto_to_order(dto: OrderDTO) -> Orders:
     data = dto.model_dump(exclude_none=True)
     return Orders(**data)

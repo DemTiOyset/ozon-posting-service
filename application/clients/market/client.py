@@ -1,7 +1,7 @@
 ﻿import httpx
 
 from application.config import settings
-from application.orders.shemas.orders_from_market import ReceivedBusinessOrderDTO
+from application.sсhemas.orders_from_market import ReceivedBusinessOrderDTO
 
 
 async def get_order(

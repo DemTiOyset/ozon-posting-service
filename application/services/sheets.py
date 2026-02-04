@@ -1,7 +1,7 @@
 ﻿from typing import List
 
-from application.orders.integrations.google_sheets.columns import C
-from application.orders.shemas.orders import OrderDTO
+from application.repositories.google_sheets.columns import C
+from application.sсhemas.orders import OrderDTO
 
 
 async def _create_order_items_in_sheets(

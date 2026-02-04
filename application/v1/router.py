@@ -1,11 +1,14 @@
 ﻿from fastapi import APIRouter, Body, status, Depends
 from pydantic import ValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from application.clients.market.client import get_order
+from application.database.db import get_db
 from application.dependencies.sheets import get_sheets_repo
-from application.orders.integrations.google_sheets.repository import SheetsRepository
-from application.orders.services.use_case import handle_order_created, handle_order_updated_shipment_date
-from application.orders.shemas.notification import OrderCreatedNotificationDTO, NotificationTypeEnum, \
+from application.repositories.google_sheets.repository import SheetsRepository
+from application.services.use_case import handle_order_created, handle_order_updated_shipment_date
+from application.sсhemas.notification import OrderCreatedNotificationDTO, NotificationTypeEnum, \
     OrderUpdatedShipmentDateNotificationDTO
 
 from application.v1.responses import Responses
@@ -18,7 +21,8 @@ router = APIRouter(
 @router.post("/notification")
 async def notification(
         unprocessed_notification: dict = Body(...),
-        repo: SheetsRepository = Depends(get_sheets_repo)
+        repo: SheetsRepository = Depends(get_sheets_repo),
+        session: AsyncSession = Depends(get_db),
 ):
     if unprocessed_notification.get("message_type") == NotificationTypeEnum.TYPE_PING:
         return JSONResponse(
@@ -31,18 +35,18 @@ async def notification(
         )
 
     try:
-
+        order = await get_order(unprocessed_notification.get("posting_number"))
         if unprocessed_notification.get("message_type") == NotificationTypeEnum.TYPE_NEW_POSTING:
-            notification = OrderCreatedNotificationDTO.model_validate(unprocessed_notification)
-            created_order_response = await handle_order_created(notification, repo)
+            processed_notification = OrderCreatedNotificationDTO.model_validate(unprocessed_notification)
+            created_order_response = await handle_order_created(processed_notification, repo, session, order)
             response = Responses.responses(created_order_response)
             return response
 
         elif unprocessed_notification.get("message_type") == NotificationTypeEnum.TYPE_CUTOFF_DATE_CHANGED:
-            notification = OrderUpdatedShipmentDateNotificationDTO.model_validate(unprocessed_notification)
-            response = await handle_order_updated_shipment_date(notification, repo)
+            processed_notification = OrderUpdatedShipmentDateNotificationDTO.model_validate(unprocessed_notification)
+            response = await handle_order_updated_shipment_date(processed_notification, repo, session, order)
             if response.get("message") == "There is no such entry in the database":
-                updated_shipment_date_response = await handle_order_created(notification, repo)
+                updated_shipment_date_response = await handle_order_created(processed_notification, repo, session, order)
                 response = Responses.responses(updated_shipment_date_response)
                 return response
 
