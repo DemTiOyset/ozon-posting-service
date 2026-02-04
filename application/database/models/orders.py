@@ -8,7 +8,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from application.db import Base
+from application.database.db import Base
 
 
 class Orders(Base):

@@ -27,7 +27,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: ["alembic", "-c", "alembic.ini", "upgrade", "head"]
+    command:
+      [
+        "alembic",
+        "-c",
+        "application/database/alembic.ini",
+        "upgrade",
+        "head"
+      ]
     restart: "no"
 
   app:
@@ -61,7 +68,7 @@ services:
 secrets:
   google_sa_json:
     # На сервере положишь файл сюда (пример): ./secrets/google-sa.json
-    file: ./secrets/google-sa.json
+    file: ./application/google-secret.json
 
 volumes:
   postgres_data:

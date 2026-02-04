@@ -35,18 +35,17 @@ async def notification(
         )
 
     try:
-        order = await get_order(unprocessed_notification.get("posting_number"))
         if unprocessed_notification.get("message_type") == NotificationTypeEnum.TYPE_NEW_POSTING:
             processed_notification = OrderCreatedNotificationDTO.model_validate(unprocessed_notification)
-            created_order_response = await handle_order_created(processed_notification, repo, session, order)
+            created_order_response = await handle_order_created(processed_notification, repo, session)
             response = Responses.responses(created_order_response)
             return response
 
         elif unprocessed_notification.get("message_type") == NotificationTypeEnum.TYPE_CUTOFF_DATE_CHANGED:
             processed_notification = OrderUpdatedShipmentDateNotificationDTO.model_validate(unprocessed_notification)
-            response = await handle_order_updated_shipment_date(processed_notification, repo, session, order)
+            response = await handle_order_updated_shipment_date(processed_notification, repo, session)
             if response.get("message") == "There is no such entry in the database":
-                updated_shipment_date_response = await handle_order_created(processed_notification, repo, session, order)
+                updated_shipment_date_response = await handle_order_created(processed_notification, repo, session)
                 response = Responses.responses(updated_shipment_date_response)
                 return response
 

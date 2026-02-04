@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 import re
 import difflib
 
-from application.orders.integrations.google_sheets.columns import C
+from application.repositories.google_sheets.columns import C
 
 
 class SheetsSchemaError(RuntimeError):

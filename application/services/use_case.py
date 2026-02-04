@@ -7,10 +7,10 @@
 """
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from application.clients.market.client import get_order
 from application.repositories.google_sheets.repository import SheetsRepository
 from application.repositories.repo import OrderRepository
 from application.services.sheets import _create_order_items_in_sheets
-from application.sсhemas.orders_from_market import ReceivedOrderDTO
 from application.sсhemas.transformation import transforming_order_data_creation, dto_to_order
 from application.sсhemas.notification import OrderCreatedNotificationDTO, OrderUpdatedShipmentDateNotificationDTO, \
     OrderUpdatedStatusNotificationDTO
@@ -19,19 +19,19 @@ from application.sсhemas.notification import OrderCreatedNotificationDTO, Order
 async def handle_order_created(
         notification: OrderCreatedNotificationDTO,
         sheet_repo: SheetsRepository,
-        session: AsyncSession,
-        order_from_market: ReceivedOrderDTO
+        session: AsyncSession
 ):
     try:
+        order_from_market = await get_order(notification.posting_number)
         db_repo = OrderRepository(session)
         order_from_db = \
             await db_repo.get_first_order_by_posting_number(notification.posting_number)    # Получение записи заказа из бд по его номеру из вебхука
 
-        if order_from_db:    # Проверка на наличие записи о заказе в бд, если записей нет, то программа записывает
-            order_items_dto = await transforming_order_data_creation(
-                order_data=order_from_market
-            )   # Преобразование данных полученных из get_order в pydantic схему, которую можно преобразовать в ORM модель
+        order_items_dto = await transforming_order_data_creation(
+            order_data=order_from_market
+        )  # Преобразование данных полученных из get_order в pydantic схему, которую можно преобразовать в ORM модель
 
+        if not order_from_db:    # Проверка на наличие записи о заказе в бд, если записей нет, то программа записывает
             dto_to_model = [dto_to_order(dto) for dto in order_items_dto]  # Преобразование pydantic схемы в ORM модель
 
 
@@ -61,7 +61,6 @@ async def handle_order_updated_shipment_date(
         session: AsyncSession
 ):
     try:
-
         db_repo = OrderRepository(session)
         orders_from_db = \
             await db_repo.get_order_items_by_posting_number(notification.posting_number)    # Получение записи заказа из бд по его номеру из вебхука

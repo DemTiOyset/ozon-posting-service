@@ -1,6 +1,6 @@
 ﻿from fastapi import FastAPI
 
-from application.orders.router import router as webhook_router
+from application.v1.router import router as webhook_router
 
 app = FastAPI(
     title="Gorbushka Keepers Ozon",
