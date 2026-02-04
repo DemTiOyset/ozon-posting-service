@@ -24,10 +24,10 @@ async def handle_order_created(
 ):
     try:
         db_repo = OrderRepository(session)
-        orders_from_db = \
-            await db_repo.get_order_items_by_posting_number(notification.posting_number)    # Получение записи заказа из бд по его номеру из вебхука
+        order_from_db = \
+            await db_repo.get_first_order_by_posting_number(notification.posting_number)    # Получение записи заказа из бд по его номеру из вебхука
 
-        if len(orders_from_db) == 0:    # Проверка на наличие записи о заказе в бд, если записей нет, то программа записывает
+        if order_from_db:    # Проверка на наличие записи о заказе в бд, если записей нет, то программа записывает
             order_items_dto = await transforming_order_data_creation(
                 order_data=order_from_market
             )   # Преобразование данных полученных из get_order в pydantic схему, которую можно преобразовать в ORM модель
