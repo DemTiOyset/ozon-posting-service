@@ -61,6 +61,25 @@ class OrderUpdatedStatusEnum(str, Enum):
     posting_canceled = "posting_canceled"       # Отменено.
     posting_not_in_sort_center = "posting_not_in_sort_center"    # Не принято на сортировочном центре.
 
+STATUS_LABELS: dict[OrderUpdatedStatusEnum, str] = {
+    OrderUpdatedStatusEnum.posting_acceptance_in_progress: "Идёт приёмка",
+    OrderUpdatedStatusEnum.posting_awaiting_registration: "Ожидает регистрации",
+    OrderUpdatedStatusEnum.posting_transferring_to_delivery: "Передаётся в доставку",
+    OrderUpdatedStatusEnum.posting_in_carriage: "В перевозке",
+    OrderUpdatedStatusEnum.posting_created: "Создан",
+    OrderUpdatedStatusEnum.posting_not_in_carriage: "Не добавлен в перевозку",
+    OrderUpdatedStatusEnum.posting_in_arbitration: "Арбитраж",
+    OrderUpdatedStatusEnum.posting_in_client_arbitration: "Клиентский арбитраж",
+    OrderUpdatedStatusEnum.posting_on_way_to_city: "На пути в пункт выдачи",
+    OrderUpdatedStatusEnum.posting_in_pickup_point: "В пункте выдачи",
+    OrderUpdatedStatusEnum.posting_conditionally_delivered: "Условно доставлено",
+    OrderUpdatedStatusEnum.posting_driver_pick_up: "У водителя",
+    OrderUpdatedStatusEnum.posting_delivered: "Доставлено",
+    OrderUpdatedStatusEnum.posting_received: "Получено",
+    OrderUpdatedStatusEnum.posting_canceled: "Отменено",
+    OrderUpdatedStatusEnum.posting_not_in_sort_center: "Не принято на сортировочном центре"
+}
+
 class OrderUpdatedStatusNotificationDTO(BaseOrderNotificationDTO):
     new_state: OrderUpdatedStatusEnum
     changed_state_date: datetime

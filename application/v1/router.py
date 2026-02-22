@@ -7,9 +7,10 @@ from application.clients.market.client import get_order
 from application.database.db import get_db
 from application.dependencies.sheets import get_sheets_repo
 from application.repositories.google_sheets.repository import SheetsRepository
-from application.services.use_case import handle_order_created, handle_order_updated_shipment_date
+from application.services.use_case import handle_order_created, handle_order_updated_shipment_date, \
+    handle_order_updated_status
 from application.sсhemas.notification import OrderCreatedNotificationDTO, NotificationTypeEnum, \
-    OrderUpdatedShipmentDateNotificationDTO
+    OrderUpdatedShipmentDateNotificationDTO, OrderUpdatedStatusNotificationDTO
 
 from application.v1.responses import Responses
 
@@ -17,6 +18,10 @@ router = APIRouter(
     prefix="/webhook",
     tags=["webhook"]
 )
+
+@router.post("/get_order")
+async def get_order_from_market(posting_number):
+    return await get_order(posting_number)
 
 @router.post("/notification")
 async def notification(
@@ -46,8 +51,18 @@ async def notification(
             response = await handle_order_updated_shipment_date(processed_notification, repo, session)
             if response.get("message") == "There is no such entry in the database":
                 updated_shipment_date_response = await handle_order_created(processed_notification, repo, session)
-                response = Responses.responses(updated_shipment_date_response)
-                return response
+                created_response = Responses.responses(updated_shipment_date_response)
+                return created_response
+            return response
+
+        elif unprocessed_notification.get("message_type") == NotificationTypeEnum.TYPE_STATE_CHANGED:
+            processed_notification = OrderUpdatedStatusNotificationDTO.model_validate(unprocessed_notification)
+            response = await handle_order_updated_status(processed_notification, repo, session)
+            if response.get("message") == "There is no such entry in the database":
+                updated_status_response = await handle_order_created(processed_notification, repo, session)
+                created_response = Responses.responses(updated_status_response)
+                return created_response
+            return response
 
     except ValidationError as e:
         return JSONResponse(

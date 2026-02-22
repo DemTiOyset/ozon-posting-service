@@ -59,8 +59,31 @@ class Responses:
                 content={
                     "error": {
                         "code": "ERROR_REQUEST_DUPLICATED",
-                        "message": "Статус в сервисе равен обновленному статусу в уведомлении.",
+                        "message": "Статус в системе равен обновленному статусу в уведомлении.",
                         "details": handler_response.get("error"),
+                    }
+                },
+            )
+
+        elif handler_response.get("message") == "The quantity to be reduced is greater than the existing quantity.":
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={
+                    "error": {
+                        "code": "ERROR_REQUEST_DUPLICATED",
+                        "message": "Количество товара в системе меньше присылаемого в уведомлении.",
+                        "details": handler_response.get("error"),
+                    }
+                },
+            )
+
+        elif handler_response.get("message") == "Uniqueness error when writing to the database.":
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={
+                    "error": {
+                        "code": "ERROR_REQUEST_DUPLICATED",
+                        "message": "Запись уже существует"
                     }
                 },
             )

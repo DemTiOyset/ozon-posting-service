@@ -11,7 +11,6 @@ class SheetsSchemaError(RuntimeError):
 
 
 # --- колонки, в которые сервис ИМЕЕТ ПРАВО писать ---
-# supplier + purchase_price = только ручной ввод -> НЕ ПИШЕМ
 WRITABLE_COLUMNS = {
     # business
     C.name,
@@ -35,6 +34,7 @@ ROW_TYPE_SUMMARY = "DAY_SUMMARY"
 
 
 def _norm(s: str) -> str:
+    """Нормализация строки для сравнения"""
     s = (s or "")
     s = str(s).strip().lower().replace("ё", "е")
     s = re.sub(r"\s+", " ", s)
@@ -56,6 +56,7 @@ class SheetsRepository:
     # A1 helpers
     # -------------------------
     def _col_to_a1(self, col_idx_0: int) -> str:
+        """Конвертация 0-based индекса колонки в A1 нотацию"""
         n = col_idx_0 + 1
         s = ""
         while n:
@@ -75,7 +76,7 @@ class SheetsRepository:
     # Schema / columns
     # -------------------------
     def _get_header_row(self) -> List[str]:
-        # Важно: A1-range должен содержать буквы колонок
+        """Получение заголовка таблицы"""
         resp = (
             self.service.spreadsheets()
             .values()
@@ -171,6 +172,7 @@ class SheetsRepository:
         raise SheetsSchemaError(f"Sheet '{self.sheet_name}' not found (check GOOGLE_SHEET_NAME)")
 
     def insert_empty_rows(self, start_row_index_1based: int, count: int) -> dict:
+        """Вставка пустых строк"""
         sheet_id = self._get_sheet_id()
         start0 = start_row_index_1based - 1
         body = {
@@ -196,6 +198,7 @@ class SheetsRepository:
     # PATCH update (точечно)
     # -------------------------
     def patch_row_cells(self, col_map: Dict[str, int], row_idx_1: int, values: Dict[str, Any]) -> dict:
+        """Обновление отдельных ячеек в строке"""
         data = []
         for col_name, v in values.items():
             if col_name not in WRITABLE_COLUMNS:
@@ -218,9 +221,10 @@ class SheetsRepository:
         ).execute()
 
     # -------------------------
-    # Read service columns (stable)
+    # Read service columns
     # -------------------------
     def _batch_get_columns(self, col_letters: List[str]) -> Dict[str, List[str]]:
+        """Получение данных из нескольких колонок одним запросом"""
         ranges = [f"{self._sheet_ref()}!{c}2:{c}" for c in col_letters]
         resp = self.service.spreadsheets().values().batchGet(
             spreadsheetId=self.spreadsheet_id,
@@ -246,6 +250,7 @@ class SheetsRepository:
         return out
 
     def _get_first_empty_row_1(self, col_map: Dict[str, int]) -> int:
+        """Поиск первой пустой строки"""
         key_col = self._col_to_a1(col_map[C.key])
         cols = self._batch_get_columns([key_col])
         return len(cols[key_col]) + 2
@@ -254,6 +259,7 @@ class SheetsRepository:
     # Find helpers (by service cols)
     # -------------------------
     def find_item_row_by_key(self, col_map: Dict[str, int], key: str) -> Optional[int]:
+        """Поиск строки товара по ключу"""
         key_col = self._col_to_a1(col_map[C.key])
         cols = self._batch_get_columns([key_col])
         keys = cols[key_col]
@@ -265,6 +271,7 @@ class SheetsRepository:
         return None
 
     def find_day_header_row(self, col_map: Dict[str, int], ship_date_iso: str) -> Optional[int]:
+        """Поиск строки-заголовка дня"""
         ship_col = self._col_to_a1(col_map[C.ship_date_iso])
         type_col = self._col_to_a1(col_map[C.row_type])
 
@@ -278,6 +285,7 @@ class SheetsRepository:
         return None
 
     def find_day_summary_row(self, col_map: Dict[str, int], ship_date_iso: str) -> Optional[int]:
+        """Поиск строки-итога дня"""
         ship_col = self._col_to_a1(col_map[C.ship_date_iso])
         type_col = self._col_to_a1(col_map[C.row_type])
 
@@ -291,6 +299,7 @@ class SheetsRepository:
         return None
 
     def find_first_day_row(self, col_map: Dict[str, int], ship_date_iso: str) -> Optional[int]:
+        """Поиск первой строки с указанной датой"""
         ship_col = self._col_to_a1(col_map[C.ship_date_iso])
         cols = self._batch_get_columns([ship_col])
         ships = cols[ship_col]
@@ -305,6 +314,7 @@ class SheetsRepository:
     # Day block (create/repair)
     # -------------------------
     def ensure_day_block(self, col_map: Dict[str, int], ship_date_iso: str) -> dict:
+        """Создание или восстановление блока дня (header + summary)"""
         header_row = self.find_day_header_row(col_map, ship_date_iso)
         summary_row = self.find_day_summary_row(col_map, ship_date_iso)
 
@@ -384,6 +394,8 @@ class SheetsRepository:
     # -------------------------
     def upsert_item(self, values: Dict[str, Any]) -> dict:
         """
+        Создание или обновление строки товара.
+
         values должны содержать:
         - C.ship_date_iso (YYYY-MM-DD)
         - C.key
@@ -401,3 +413,190 @@ class SheetsRepository:
         self.insert_empty_rows(summary_row, 1)
         new_row = summary_row
         return self.patch_row_cells(col_map, new_row, values)
+
+    def update_by_posting_number(
+            self,
+            posting_number: str,
+            updates: Dict[str, Any]
+    ) -> dict:
+        """
+        Обновляет ВСЕ строки с заданным posting_number (номером заказа).
+
+        Args:
+            posting_number: Номер заказа для поиска в колонке C.order_number
+            updates: Словарь с обновлениями {колонка: новое_значение}
+
+        Returns:
+            Словарь с результатами обновления всех найденных строк
+        """
+        col_map = self.build_column_map()
+
+        # Получаем все значения колонки order_number
+        order_number_col = self._col_to_a1(col_map[C.order_number])
+        type_col = self._col_to_a1(col_map[C.row_type])
+
+        # Получаем данные для поиска
+        cols = self._batch_get_columns([order_number_col, type_col])
+        order_numbers = cols[order_number_col]
+        row_types = cols[type_col]
+
+        # Находим все строки с заданным posting_number и типом ITEM
+        target_rows = []
+        for i in range(len(order_numbers)):
+            # Проверяем тип строки - только ITEM
+            if i < len(row_types) and str(row_types[i]).strip() != ROW_TYPE_ITEM:
+                continue
+
+            # Проверяем номер заказа
+            if str(order_numbers[i]).strip() == posting_number:
+                target_rows.append(i + 2)
+
+        if not target_rows:
+            return {
+                "updated": False,
+                "reason": f"No items found with posting_number '{posting_number}'",
+                "rows_updated": 0
+            }
+
+        results = []
+
+        # Если обновляем дату отгрузки, нужно обработать перемещение в другой день
+        if C.ship_date_iso in updates or C.ship_date in updates:
+            new_ship_date_iso = updates.get(C.ship_date_iso) or updates.get(C.ship_date)
+
+            if new_ship_date_iso:
+                # Убеждаемся, что новый день существует
+                day_block = self.ensure_day_block(col_map, new_ship_date_iso)
+
+                # Для каждой строки получаем старую дату и обновляем ключ если нужно
+                for row_idx in target_rows:
+                    # Получаем старую дату
+                    ship_date_col = self._col_to_a1(col_map[C.ship_date_iso])
+                    ship_cols = self._batch_get_columns([ship_date_col])
+                    old_date = ""
+                    if row_idx - 2 < len(ship_cols[ship_date_col]):
+                        old_date = str(ship_cols[ship_date_col][row_idx - 2]).strip()
+
+                    # Обновляем даты
+                    row_updates = updates.copy()
+
+                    # Обновляем ключ если он содержит старую дату
+                    if old_date and old_date != new_ship_date_iso:
+                        key_col = self._col_to_a1(col_map[C.key])
+                        key_cols = self._batch_get_columns([key_col])
+                        if row_idx - 2 < len(key_cols[key_col]):
+                            old_key = key_cols[key_col][row_idx - 2]
+                            if old_key and f":{old_date}:" in str(old_key):
+                                new_key = str(old_key).replace(f":{old_date}:", f":{new_ship_date_iso}:")
+                                row_updates[C.key] = new_key
+
+                    # Применяем обновления к строке
+                    result = self.patch_row_cells(col_map, row_idx, row_updates)
+                    results.append({
+                        "row": row_idx,
+                        "old_date": old_date,
+                        "new_date": new_ship_date_iso,
+                        "result": result
+                    })
+        else:
+            # Простое обновление без изменения даты
+            for row_idx in target_rows:
+                result = self.patch_row_cells(col_map, row_idx, updates)
+                results.append({"row": row_idx, "result": result})
+
+        return {
+            "updated": True,
+            "posting_number": posting_number,
+            "rows_found": len(target_rows),
+            "rows_updated": len(results),
+            "results": results
+        }
+
+    def update_by_key(self, key: str, updates: Dict[str, Any]) -> dict:
+        """
+        Обновляет строку по ключу.
+
+        Args:
+            key: Значение в колонке C.key для поиска строки
+            updates: Словарь с обновлениями {колонка: новое_значение}
+
+        Returns:
+            Результат обновления от Google Sheets API
+        """
+        col_map = self.build_column_map()
+        row_idx = self.find_item_row_by_key(col_map, key)
+
+        if row_idx is None:
+            return {"updated": False, "reason": f"Row with key '{key}' not found"}
+
+        return self.patch_row_cells(col_map, row_idx, updates)
+
+    def update_order_shipment_date_simple(
+            self,
+            posting_number: str,
+            new_ship_date_iso: str
+    ) -> dict:
+        """
+        Обновляет дату отгрузки для конкретного заказа без перемещения строки.
+
+        Args:
+            posting_number: Номер заказа для поиска
+            new_ship_date_iso: Новая дата отгрузки в формате "YYYY-MM-DD"
+
+        Returns:
+            Результат обновления
+        """
+        col_map = self.build_column_map()
+
+        # Ищем строку по posting_number в колонке order_number
+        order_number_col = self._col_to_a1(col_map[C.order_number])
+        cols = self._batch_get_columns([order_number_col])
+        order_numbers = cols[order_number_col]
+
+        # Находим индекс строки
+        row_index = None
+        for i, order_num in enumerate(order_numbers):
+            if str(order_num).strip() == posting_number:
+                # Проверяем тип строки
+                type_col = self._col_to_a1(col_map[C.row_type])
+                type_cols = self._batch_get_columns([type_col])
+                if i < len(type_cols[type_col]):
+                    row_type = str(type_cols[type_col][i]).strip()
+                    if row_type == ROW_TYPE_ITEM:
+                        row_index = i + 2
+                        break
+
+        if not row_index:
+            return {"updated": False, "reason": f"Order '{posting_number}' not found"}
+
+        # Получаем текущую дату отгрузки
+        ship_date_col = self._col_to_a1(col_map[C.ship_date_iso])
+        ship_cols = self._batch_get_columns([ship_date_col])
+        old_date = ship_cols[ship_date_col][row_index - 2] if row_index - 2 < len(ship_cols[ship_date_col]) else ""
+
+        # Обновляем даты
+        updates = {
+            C.ship_date_iso: new_ship_date_iso,
+            C.ship_date: new_ship_date_iso,
+        }
+
+        # Обновляем ключ если нужно
+        if old_date and old_date != new_ship_date_iso:
+            key_col = self._col_to_a1(col_map[C.key])
+            key_cols = self._batch_get_columns([key_col])
+            old_key = key_cols[key_col][row_index - 2] if row_index - 2 < len(key_cols[key_col]) else ""
+
+            if old_key and f":{old_date}:" in str(old_key):
+                new_key = str(old_key).replace(f":{old_date}:", f":{new_ship_date_iso}:")
+                updates[C.key] = new_key
+
+        result = self.patch_row_cells(col_map, row_index, updates)
+
+        return {
+            "updated": True,
+            "posting_number": posting_number,
+            "old_date": old_date,
+            "new_date": new_ship_date_iso,
+            "row": row_index,
+            "result": result
+        }

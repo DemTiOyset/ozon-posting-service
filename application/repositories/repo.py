@@ -14,8 +14,8 @@ class OrderRepository:
             session: AsyncSession,
             posting_number: str,
     ) -> Orders:
-        stmt = (select(Orders)
-                .where(Orders.posting_number == posting_number)
+        stmt = (select(OrderItems)
+                .where(posting_number == posting_number)
                 )
 
         result = await session.execute(stmt)
@@ -24,7 +24,7 @@ class OrderRepository:
         return orders
 
     @staticmethod
-    async def get_first_order_by_posting_number(
+    async def get_one_or_none_by_posting_number(
             session: AsyncSession,
             posting_number: str
     ):
@@ -35,7 +35,7 @@ class OrderRepository:
         )
 
         result = await session.execute(stmt)
-        orders_shipment_date = result.scalars().first()
+        orders_shipment_date = result.scalar_one_or_none()
 
         return orders_shipment_date
 
@@ -53,28 +53,6 @@ class OrderRepository:
         return order
 
     @staticmethod
-    async def cancel_order_items(
-            session: AsyncSession,
-            orders: Orders,
-    ) -> Orders:
-        
-        stmt = (
-            update(Orders)
-            .where(
-                Orders.posting_number == orders.posting_number,
-                Orders.sku == orders.sku,
-                Orders.is_returned.is_(False),
-            )
-            .values(is_returned=True)
-            .returning(Orders)
-        )
-
-        result = await session.execute(stmt)
-        updated_orders = result.scalars().all()
-
-        return updated_orders
-
-    @staticmethod
     async def update_order_shipment_date(
             session: AsyncSession,
             posting_number: str,
@@ -83,8 +61,7 @@ class OrderRepository:
         stmt = (
             update(Orders)
             .where(
-                Orders.posting_number == posting_number,
-                Orders.is_returned.is_(False),
+                Orders.posting_number == posting_number
             )
             .values(shipment_date=shipment_date)
             .returning(Orders)
@@ -92,6 +69,7 @@ class OrderRepository:
 
         result = await session.execute(stmt)
         updated_orders = result.scalars().all()
+        await session.flush()
 
         return updated_orders
 
@@ -106,7 +84,6 @@ class OrderRepository:
             update(Orders)
             .where(
                 Orders.posting_number == posting_number,
-                Orders.is_returned.is_(False),
             )
             .values(status=status)
             .returning(Orders)
@@ -114,18 +91,70 @@ class OrderRepository:
 
         result = await session.execute(stmt)
         orders = result.scalars().all()
+        await session.flush()
 
         return orders
 
+    @staticmethod
+    async def reduce_item_quantity(
+            session: AsyncSession,
+            posting_number: str,
+            sku: int,
+            quantity_to_reduce: int,
+    ) -> OrderItems:
+        """
+        Уменьшает quantity на указанное значение.
+        Бросает исключение, если результат будет отрицательным.
+        """
+        # UPDATE с относительным изменением
+        stmt = (
+            update(OrderItems)
+            .where(
+                posting_number == posting_number,
+                sku == sku,
+                OrderItems.quantity >= quantity_to_reduce,  # защита от отрицательных
+            )
+            .values(
+                quantity=OrderItems.quantity - quantity_to_reduce,
+                quantity_cancelled=OrderItems.quantity_cancelled + quantity_to_reduce,
+            )
+            .returning(OrderItems.quantity)
+        )
 
+        result = await session.execute(stmt)
+        updated_item = result.scalar_one_or_none()
+
+        if not updated_item:
+            # Либо записи нет, либо quantity недостаточно
+            raise ValueError(
+                f"Cannot reduce quantity: item not found or insufficient quantity"
+            )
+
+        await session.flush()  # применить изменения в текущей транзакции
+        return updated_item
 
     @staticmethod
-    async def mark_cancelled_items_in_order(
+    async def establish_cancelled(
             session: AsyncSession,
             posting_number: str,
             sku: int
-    ):
-        ...
+    ) -> OrderItems:
+        stmt = (
+            update(OrderItems)
+            .where(
+                OrderItems.order_posting_number==posting_number,
+                OrderItems.sku == sku,
+                   )
+            .values(
+                is_returned=True
+                    )
+            .returning(OrderItems)
+        )
+
+        result = await session.execute(stmt)
+        updated_item = result.scalar_one_or_none()
+        await session.flush()  # применить изменения в текущей транзакции
+        return updated_item
 
 
 

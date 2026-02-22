@@ -3,12 +3,13 @@ from typing import List
 from application.database.models.order_items import OrderItems
 from application.database.models.orders import Orders
 from application.sсhemas.notification import OrderCancelledNotificationDTO, OrderUpdatedStatusEnum, \
-    OrderUpdatedShipmentDateNotificationDTO, OrderUpdatedStatusNotificationDTO, OrderUpdatedDeliveryDateNotificationDTO
+    OrderUpdatedShipmentDateNotificationDTO, OrderUpdatedStatusNotificationDTO, OrderUpdatedDeliveryDateNotificationDTO, \
+    STATUS_LABELS
 from application.sсhemas.orders_from_market import ReceivedOrderDTO
 from application.sсhemas.orders import OrderDTO, OrderItemsDTO
 
 
-async def transforming_order_data_creation(
+def transforming_order_data_creation_for_db(
         order_data: ReceivedOrderDTO
 ) -> OrderDTO:
 
@@ -26,11 +27,31 @@ async def transforming_order_data_creation(
 
     return order
 
-async def transforming_order_items_creation(
+
+def transforming_order_data_creation_for_sheets(
+    order_data: ReceivedOrderDTO
+) -> OrderDTO:
+    last_event_time = order_data.in_process_at
+    posting_number = order_data.posting_number
+    shipment_date = order_data.shipment_date
+    status = STATUS_LABELS.get(order_data.status)
+
+    order = OrderDTO.model_validate({
+        "last_event_time": last_event_time,
+        "posting_number": posting_number,
+        "shipment_date": shipment_date,
+        "status": status
+    })
+
+    return order
+
+
+def transforming_order_items_creation(
         order_data: ReceivedOrderDTO
 ) -> List[OrderItemsDTO]:
     order_items: List[OrderItemsDTO] = []
     for product in order_data.products:
+
         sku = product.sku
         offer_id = product.offer_id
         quantity = product.quantity
@@ -38,7 +59,7 @@ async def transforming_order_items_creation(
 
         for financial_data_product in order_data.financial_data.products:
             if sku == financial_data_product.product_id:
-                order_item = OrderDTO.model_validate({
+                order_item = OrderItemsDTO.model_validate({
                     "name": name,
                     "offer_id": offer_id,
                     "quantity": quantity,
@@ -56,7 +77,7 @@ async def transforming_order_items_creation(
     return order_items
 
 
-async def transforming_order_cancellation_data(
+def transforming_order_cancellation_data(
         notification: OrderCancelledNotificationDTO
 ) -> List[OrderDTO]:
 
@@ -81,7 +102,7 @@ async def transforming_order_cancellation_data(
     return order_cancellation_items
 
 
-async def transforming_order_shipment_date_update(
+def transforming_order_shipment_date_update(
         notification: OrderUpdatedShipmentDateNotificationDTO,
 ) -> OrderDTO:
     new_shipment_date = notification.new_cutoff_date
@@ -97,7 +118,7 @@ async def transforming_order_shipment_date_update(
     return updated_shipment_date
 
 
-async def transforming_order_status_update(
+def transforming_order_status_update(
         notification: OrderUpdatedStatusNotificationDTO
 ) -> OrderDTO:
     last_event_time = notification.changed_state_date
@@ -115,7 +136,7 @@ async def transforming_order_status_update(
     return updated_order_status
 
 
-async def transforming_order_delivery_date_update(
+def transforming_order_delivery_date_update(
     notification: OrderUpdatedDeliveryDateNotificationDTO,
 ) -> OrderDTO:
     new_delivery_date_begin = notification.new_delivery_date_begin

@@ -3,6 +3,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
+from application.sсhemas.notification import OrderUpdatedStatusEnum
+
 
 class ProductFinancialOrderDTO(BaseModel):
     commission_amount: float    # Размер комиссии за товар.
@@ -26,7 +28,7 @@ class ProductOrderDTO(BaseModel):
 
 class ReceivedOrderDTO(BaseModel):
     posting_number: str
-    status: str
+    status: OrderUpdatedStatusEnum
     in_process_at: datetime     # Дата и время начала обработки отправления.
     shipment_date: datetime
     products: List[ProductOrderDTO]
